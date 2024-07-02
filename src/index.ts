@@ -1,9 +1,8 @@
-import { RecursivePartial } from './util'
+import { ExtractPattern, ExtractResult, RecursivePartial, isHole } from './util'
 
 export const patch = <T>(t: T, p: RecursivePartial<T>): T => {
     for (const k in p) {
         const v = p[k]
-        // @ts-ignore
         if (typeof t[k] === 'object' && typeof v === 'object') {
             // @ts-ignore
             patch(t[k], v)
@@ -16,7 +15,7 @@ export const patch = <T>(t: T, p: RecursivePartial<T>): T => {
 }
 
 export const patched = <T>(t: T, p: RecursivePartial<T>): T => {
-    const n: { [key: string]: T[keyof T] } = {}
+    const n: any = {}
     for (const k in t) {
         if (!(k in p)) {
             n[k] = t[k]
@@ -28,10 +27,26 @@ export const patched = <T>(t: T, p: RecursivePartial<T>): T => {
             // @ts-ignore
             n[k] = patched(t[k], v)
         } else {
-            // @ts-ignore
             n[k] = v
         }
     }
-    // @ts-ignore
+    return n
+}
+
+export const extract = <T, P extends ExtractPattern<T>>(t: T, p: P): ExtractResult<T, P> => {
+    const n: any = {}
+    for (const k in p) {
+        const v = p[k]
+        if (isHole(v)) {
+            // @ts-ignore
+            n[k] = k in t ? t[k] : undefined
+        } else {
+            // @ts-ignore
+            if (k in t && typeof t[k] === 'object') {
+                // @ts-ignore
+                n[k] = extract(t[k], p[k])
+            }
+        }
+    }
     return n
 }
